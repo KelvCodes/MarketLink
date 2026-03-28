@@ -2,6 +2,11 @@ import { useState } from 'react';
 import { ShieldCheck, Download, Share2, TrendingUp, CheckCircle2, LayoutList } from 'lucide-react';
 import { demoData } from '../data/demoData';
 
+// MARKET ASSETS
+import tomatoesImg from '../assets/tomatoes.jpg';
+import fishImg from '../assets/fish.jpg';
+import nutsImg from '../assets/nuts.jpg';
+
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Noto+Sans:wght@400;500;600&display=swap');
 
@@ -43,8 +48,10 @@ const styles = `
   .th-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 80px; }
   @media (max-width: 900px) { .th-stats-grid { grid-template-columns: 1fr 1fr; } }
   @media (max-width: 480px) { .th-stats-grid { grid-template-columns: 1fr; } }
-  .th-stat-card { background: #fff; border-radius: 28px; padding: 28px; border: 1px solid #EDE5DC; text-align: center; transition: all 0.2s; }
+  .th-stat-card { background: #fff; border-radius: 28px; padding: 28px; border: 1px solid #EDE5DC; text-align: center; transition: all 0.2s; position: relative; overflow: hidden; }
   .th-stat-card:hover { border-color: #FFB400; transform: translateY(-4px); box-shadow: 0 10px 30px rgba(26,10,0,0.06); }
+  .th-stat-img-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.04; filter: grayscale(1); pointer-events: none; }
+  .th-stat-content { position: relative; z-index: 5; }
   .th-stat-tag { font-size: 10px; font-weight: 700; color: #BBB; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px; display: block; }
   .th-stat-val { font-family: 'Sora', sans-serif; font-size: 28px; font-weight: 800; color: #1A0A00; margin-bottom: 4px; }
   .th-stat-sub { font-size: 11px; font-weight: 700; color: #00A86B; text-transform: uppercase; }
@@ -62,7 +69,9 @@ const styles = `
   @media (max-width: 1024px) { .th-loans-grid { grid-template-columns: 1fr; } }
 
   .th-loan-card { background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.08); border-radius: 32px; padding: 32px; transition: all 0.3s; position: relative; overflow: hidden; }
+  .th-loan-cardImg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.15; filter: grayscale(1) brightness(0.5); pointer-events: none; }
   .th-loan-card:hover { transform: translateY(-8px); border-color: #FFB400; background: rgba(255,180,0,0.04); }
+  .th-loan-content { position: relative; z-index: 5; }
   .th-loan-icon { width: 56px; height: 56px; border-radius: 16px; background: rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; color: #FFB400; margin-bottom: 24px; }
   .th-loan-rate { position: absolute; top: 32px; right: 32px; font-size: 12px; font-weight: 800; color: #FFB400; text-transform: uppercase; border: 1px solid rgba(255,180,0,0.3); padding: 4px 10px; border-radius: 8px; }
   .th-loan-amt { font-family: 'Sora', sans-serif; font-size: 40px; font-weight: 800; color: #fff; margin-bottom: 4px; }
@@ -129,11 +138,11 @@ export default function TrustHub() {
             <div className="th-actions">
               <button className="th-btn-primary">
                 <Download size={20} />
-                Nya Score Report
+                Get Score Report
               </button>
               <button className="th-btn-secondary">
                 <Share2 size={20} />
-                Kyerɛ Bank
+                Show Bank
               </button>
             </div>
           </div>
@@ -159,15 +168,18 @@ export default function TrustHub() {
         {/* STATS GRID */}
         <div className="th-stats-grid">
           {[
-            { label: 'Days Tracked', value: demoData.user.daysTracked, unit: 'Nna (Days)' },
-            { label: 'Daily Profit', value: `₵${demoData.stats.avgDailyProfit}`, unit: 'Gain (Avg)' },
-            { label: 'Consistency', value: `${demoData.stats.consistencyStreak} Day`, unit: 'Streak' },
-            { label: 'Annual Est.', value: `₵${demoData.stats.estimatedAnnualIncome}`, unit: 'Ahonya (Inc)' }
+            { label: 'Days Tracked', value: demoData.user.daysTracked, unit: 'Nna (Days)', img: fishImg },
+            { label: 'Daily Profit', value: `₵${demoData.stats.avgDailyProfit}`, unit: 'Gain (Avg)', img: tomatoesImg },
+            { label: 'Consistency', value: `${demoData.stats.consistencyStreak} Day`, unit: 'Streak', img: nutsImg },
+            { label: 'Annual Est.', value: `₵${demoData.stats.estimatedAnnualIncome}`, unit: 'Ahonya (Inc)', img: fishImg }
           ].map((s, i) => (
             <div key={i} className="th-stat-card">
-              <span className="th-stat-tag">{s.label}</span>
-              <div className="th-stat-val th-display">{s.value}</div>
-              <span className="th-stat-sub">{s.unit}</span>
+              <img src={s.img} className="th-stat-img-bg" alt="" />
+              <div className="th-stat-content">
+                <span className="th-stat-tag">{s.label}</span>
+                <div className="th-stat-val th-display">{s.value}</div>
+                <span className="th-stat-sub">{s.unit}</span>
+              </div>
             </div>
           ))}
         </div>
@@ -190,20 +202,23 @@ export default function TrustHub() {
           </div>
 
           <div className="th-loans-grid">
-            {demoData.loanOffers.map((loan) => (
+            {demoData.loanOffers.map((loan, idx) => (
               <div key={loan.id} className="th-loan-card">
-                <div className="th-loan-icon">
-                  <LayoutList size={28} />
+                <img src={idx === 0 ? tomatoesImg : (idx === 1 ? fishImg : nutsImg)} className="th-loan-cardImg" alt="" />
+                <div className="th-loan-content">
+                  <div className="th-loan-icon">
+                    <LayoutList size={28} />
+                  </div>
+                  <div className="th-loan-rate">{loan.rate}</div>
+                  <div className="th-loan-amt th-display">₵{loan.amount}</div>
+                  <div className="th-loan-info">{loan.partner} • {loan.term}</div>
+                  <button 
+                    onClick={() => applyForLoan(loan)}
+                    className="th-loan-btn"
+                  >
+                    Take This Loan
+                  </button>
                 </div>
-                <div className="th-loan-rate">{loan.rate}</div>
-                <div className="th-loan-amt th-display">₵{loan.amount}</div>
-                <div className="th-loan-info">{loan.partner} • {loan.term}</div>
-                <button 
-                  onClick={() => applyForLoan(loan)}
-                  className="th-loan-btn"
-                >
-                  Gye Loan Yi
-                </button>
               </div>
             ))}
           </div>
@@ -244,7 +259,7 @@ export default function TrustHub() {
               Your ₵{selectedLoan?.amount} loan application with {selectedLoan?.partner} is under review. You'll receive a notification within 24 hours.
             </p>
             <button className="th-modal-btn" onClick={() => setShowLoanModal(false)}>
-              Awifi (Dismiss)
+              Dismiss
             </button>
           </div>
         </div>

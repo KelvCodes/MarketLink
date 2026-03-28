@@ -1,40 +1,43 @@
 import { useState } from 'react';
-import { TrendingUp, TrendingDown, Clock, ArrowRight, Wallet, ShieldCheck, PieChart } from 'lucide-react';
+import { TrendingUp, TrendingDown, Clock, ArrowRight, Wallet } from 'lucide-react';
 import { demoData } from '../data/demoData';
 import { VoiceRecorder } from '../components/VoiceRecorder';
 import { Link } from 'react-router-dom';
+import { useSpeech } from '../hooks/useSpeech';
+import { useSettings } from '../hooks/useSettings';
+import { useAuth } from '../context/AuthContext';
+import { t } from '../data/translations';
+
+// MARKET ASSETS
+import tomatoesImg from '../assets/tomatoes.jpg';
+import fishImg from '../assets/fish.jpg';
+import nutsImg from '../assets/nuts.jpg';
 
 const styles = `
-  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Noto+Sans:wght@400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&display=swap');
 
-  .db-root * { box-sizing: border-box; margin: 0; padding: 0; }
+  .db-root * { box-sizing: border-box; }
   .db-root {
-    font-family: 'Noto Sans', sans-serif;
     min-height: 100vh;
     background: #1A0A00;
     color: #fff;
     position: relative;
     overflow-x: hidden;
-    padding-bottom: 120px; /* Padding for mobile bottom nav */
+    padding-bottom: 120px;
   }
-  .db-display { font-family: 'Sora', sans-serif; }
 
   /* DYNAMIC BACKGROUND */
   .db-bg-glow {
-    position: absolute;
-    width: 600px; height: 600px;
+    position: absolute; width: 600px; height: 600px;
     background: radial-gradient(circle, rgba(255,180,0,0.08) 0%, transparent 70%);
-    filter: blur(80px);
-    z-index: 0;
+    filter: blur(80px); z-index: 0;
     animation: db-glow-move 15s infinite alternate ease-in-out;
   }
   .db-bg-glow-2 {
-    position: absolute;
-    bottom: -100px; right: -100px;
+    position: absolute; bottom: -100px; right: -100px;
     width: 500px; height: 500px;
     background: radial-gradient(circle, rgba(0,168,107,0.06) 0%, transparent 70%);
-    filter: blur(60px);
-    z-index: 0;
+    filter: blur(60px); z-index: 0;
     animation: db-glow-move 20s infinite alternate-reverse ease-in-out;
   }
   @keyframes db-glow-move {
@@ -42,119 +45,56 @@ const styles = `
     100% { transform: translate(10%, 10%) scale(1.15); }
   }
 
-  /* CONTAINER */
-  .db-container { max-width: 1240px; margin: 0 auto; padding: 40px 24px; position: relative; z-index: 10; }
+  .db-container { max-width: 1240px; margin: 0 auto; padding: 120px 24px 40px; position: relative; z-index: 10; }
 
-  /* HEADER */
-  .db-header { margin-bottom: 56px; animation: db-fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
-  .db-greeting { font-family: 'Sora', sans-serif; font-size: clamp(32px, 5vw, 44px); font-weight: 800; line-height: 1.1; }
+  .db-header { margin-bottom: 56px; animation: db-fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1); position: relative; z-index: 20; }
+  .db-greeting { font-family: 'Sora', sans-serif; font-size: clamp(36px, 6vw, 56px); font-weight: 800; line-height: 1.2; text-shadow: 0 4px 24px rgba(0,0,0,0.6); letter-spacing: -0.02em; }
   .db-greeting span { color: #FFB400; }
-  .db-sub { font-size: 16px; color: rgba(255,255,255,0.4); margin-top: 10px; font-weight: 500; }
+  .db-sub { font-size: 18px; color: rgba(255,255,255,0.6); margin-top: 16px; font-weight: 500; }
 
-  /* GLASS CARD GENERIC */
   .db-glass {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 32px;
-    padding: 32px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 32px;
+    padding: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .db-glass:hover { background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.15); transform: translateY(-4px); }
 
-  /* MAIN GRID */
   .db-main-grid { display: grid; grid-template-columns: 1fr 340px; gap: 24px; }
   @media (max-width: 1024px) { .db-main-grid { grid-template-columns: 1fr; } }
 
-  /* VOICE HUB */
-  .db-voice-hub { 
-    grid-column: 1 / -1; margin-bottom: 12px;
-    display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
-    animation: db-fade-up 0.8s 0.1s cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
+  .db-voice-hub { grid-column: 1 / -1; margin-bottom: 24px; display: grid; grid-template-columns: 1fr 1.2fr; gap: 32px; animation: db-fade-up 0.8s 0.1s cubic-bezier(0.16, 1, 0.3, 1) both; }
   @media (max-width: 768px) { .db-voice-hub { grid-template-columns: 1fr; } }
-
-  .db-recorder-card { 
-    background: linear-gradient(135deg, rgba(255,180,0,0.1) 0%, rgba(255,180,0,0.02) 100%);
-    border-color: rgba(255,180,0,0.2);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    min-height: 380px;
-  }
-  .db-recorder-info { text-align: center; margin-bottom: 32px; }
-  .db-recorder-title { font-family: 'Sora', sans-serif; font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 8px; }
-  .db-recorder-sub { color: rgba(255,255,255,0.4); font-size: 14px; }
-
-  /* INSIGHT HERO CARD */
-  .db-insight-hero {
-    background: linear-gradient(135deg, rgba(66, 133, 244, 0.15) 0%, rgba(66, 133, 244, 0.05) 100%);
-    border-color: rgba(66, 133, 244, 0.2);
-    display: flex; flex-direction: column; justify-content: center;
-    padding: 40px;
-  }
-  .db-insight-tag {
-    display: inline-flex; align-items: center; gap: 8px;
-    background: rgba(66, 133, 244, 0.2); border-radius: 100px;
-    padding: 6px 14px; font-size: 11px; font-weight: 700; color: #8AB4F8;
-    text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 24px; width: fit-content;
-  }
-  .db-insight-text { font-family: 'Sora', sans-serif; font-size: clamp(20px, 3vw, 28px); font-weight: 700; color: #fff; line-height: 1.4; font-style: italic; }
-  .db-insight-text span { color: #8AB4F8; }
-  .db-insight-cta { margin-top: 32px; color: #8AB4F8; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-
-  /* STAT CARDS */
-  .db-stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; animation: db-fade-up 0.8s 0.2s cubic-bezier(0.16, 1, 0.3, 1) both; }
-  @media (max-width: 640px) { .db-stats-row { grid-template-columns: 1fr; } }
-
-  .db-stat-box { padding: 32px; }
-  .db-stat-icon-wrap { 
-    width: 48px; height: 48px; border-radius: 14px; 
-    display: flex; align-items: center; justify-content: center; margin-bottom: 24px;
-    background: rgba(255,255,255,0.05); color: #fff;
-  }
-  .db-stat-box.profit .db-stat-icon-wrap { background: rgba(0, 168, 107, 0.15); color: #00D68F; }
-  .db-stat-box.waste .db-stat-icon-wrap { background: rgba(230, 59, 30, 0.15); color: #FF6B6B; }
   
-  .db-stat-value { font-family: 'Sora', sans-serif; font-size: 36px; font-weight: 800; color: #fff; margin-bottom: 6px; }
-  .db-stat-label { font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 1.5px; }
+  .db-recorder-card { background: linear-gradient(135deg, rgba(255,180,0,0.05) 0%, rgba(255,180,0,0.01) 100%); min-height: 440px; position: relative; overflow: hidden; }
+  .db-recorder-card::before { content: ""; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,180,0,0.03) 0%, transparent 60%); animation: db-slow-rotate 20s infinite linear; }
+  @keyframes db-slow-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-  /* ACTIVITY LIST */
-  .db-activity-section { animation: db-fade-up 0.8s 0.3s cubic-bezier(0.16, 1, 0.3, 1) both; }
-  .db-section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding: 0 8px; }
-  .db-section-title { font-family: 'Sora', sans-serif; font-size: 18px; font-weight: 700; color: #fff; }
-  .db-section-link { font-size: 13px; font-weight: 700; color: #FFB400; text-decoration: none; }
+  .db-recorder-info { text-align: center; margin-bottom: 40px; position: relative; z-index: 10; }
+  .db-recorder-title { font-family: 'Sora', sans-serif; font-size: 28px; font-weight: 800; color: #fff; margin-bottom: 12px; letter-spacing: -1px; }
 
-  .db-activity-list { display: flex; flex-direction: column; gap: 14px; }
-  .db-activity-item { 
-    display: flex; items-center; gap: 20px; padding: 20px; 
-    border-radius: 24px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04);
-    transition: all 0.2s;
-  }
+  .db-stat-value { font-family: 'Sora', sans-serif; font-size: 36px; font-weight: 800; color: #fff; }
+  .db-stat-label { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 1.5px; }
+
+  .db-activity-item { display: flex; align-items: center; gap: 20px; padding: 20px; border-radius: 24px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); transition: all 0.2s; }
   .db-activity-item:hover { transform: translateX(6px); background: rgba(255,255,255,0.05); border-color: rgba(255,180,0,0.2); }
-  .db-activity-icon { width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.3); flex-shrink: 0; }
-  .db-activity-text { font-size: 15px; color: rgba(255,255,255,0.7); font-weight: 500; font-style: italic; }
-  .db-activity-time { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.2); text-transform: uppercase; margin-top: 6px; letter-spacing: 0.5px; }
 
-  /* SIDEBAR WIDGETS */
-  .db-sidebar { display: flex; flex-direction: column; gap: 24px; animation: db-fade-up 0.8s 0.4s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .db-stat-box { display: flex; flex-direction: column; gap: 8px; position: relative; overflow: hidden; }
+  .db-stat-img-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.1; filter: grayscale(1) brightness(0.5); pointer-events: none; }
+  .db-stat-icon-wrap { width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; margin-bottom: 12px; position: relative; z-index: 5; }
   
-  .db-trust-widget { 
-    background: linear-gradient(135deg, rgba(0, 168, 107, 0.15) 0%, rgba(0, 168, 107, 0.05) 100%);
-    border-color: rgba(0, 168, 107, 0.2);
-    text-align: center;
-  }
-  .db-trust-score-circle {
-    width: 80px; height: 80px; border-radius: 50%; background: #00A86B; border: 4px solid rgba(0, 168, 107, 0.3);
-    display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;
-    font-family: 'Sora', sans-serif; font-weight: 800; font-size: 24px; color: #fff;
-    box-shadow: 0 0 30px rgba(0, 168, 107, 0.3);
-  }
-  .db-trust-status { font-size: 12px; font-weight: 700; color: #00D68F; text-transform: uppercase; letter-spacing: 1.5px; }
+  .profit .db-stat-icon-wrap { color: #00A86B; background: rgba(0, 168, 107, 0.1); }
+  .waste .db-stat-icon-wrap { color: #E63B1E; background: rgba(230, 59, 30, 0.1); }
 
-  .db-market-widget { background: rgba(0,0,0,0.3); }
-  .db-market-tag { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.2); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 20px; display: block; }
-  .db-market-item { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; font-size: 13px; color: rgba(255,255,255,0.6); }
-  .db-market-dot { width: 6px; height: 6px; border-radius: 50%; background: #FFB400; }
+  .db-section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+  .db-section-title { font-family: 'Sora', sans-serif; font-size: 20px; font-weight: 800; }
+  .db-section-link { color: #FFB400; text-decoration: none; font-size: 14px; font-weight: 700; }
+
+  .db-trust-card { text-align: center; }
+  .db-trust-circle { width: 100px; height: 100px; border-radius: 50%; border: 4px solid #FFB400; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-family: 'Sora', sans-serif; font-size: 32px; font-weight: 800; color: #FFB400; }
+  .db-trust-label { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.5); margin-bottom: 24px; }
+  .db-trust-btn { display: block; width: 100%; padding: 16px; border-radius: 16px; background: #FFB400; color: #1A0A00; text-decoration: none; font-weight: 800; font-family: 'Sora', sans-serif; transition: all 0.2s; }
+  .db-trust-btn:hover { background: #FFC833; transform: scale(1.02); }
 
   @keyframes db-fade-up {
     from { opacity: 0; transform: translateY(20px); }
@@ -164,6 +104,10 @@ const styles = `
 
 export default function Dashboard() {
   const [transactions, setTransactions] = useState(demoData.recentTransactions || []);
+  const { speak } = useSpeech();
+  const { isTwi } = useSettings();
+  const { user } = useAuth();
+  const lang = isTwi ? 'Twi' : 'English';
 
   const handleNewTranscript = (text: string) => {
     const newEntry = {
@@ -172,6 +116,9 @@ export default function Dashboard() {
       date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' Today'
     };
     setTransactions(prev => [newEntry, ...prev.slice(0, 5)]);
+
+    // Voice Confirmation
+    speak(isTwi ? `Yɛasive wo dwadie no yiye.` : `Transaction saved successfully.`);
   };
 
   return (
@@ -181,128 +128,99 @@ export default function Dashboard() {
       <div className="db-bg-glow-2" />
 
       <div className="db-container">
-        {/* HEADER */}
         <header className="db-header">
-          <h1 className="db-greeting">Mema wo akye, <span>{demoData.user.name}</span> 👋</h1>
-          <p className="db-sub">Everything is looking good in the market today.</p>
+          <h1 className="db-greeting">
+            {isTwi ? 'Mema wo akye,' : 'Good morning,'} <span>{user?.name || 'Trader'}</span> 👋
+          </h1>
+          <p className="db-sub">{t('Everything is looking good in the market today.', lang)}</p>
         </header>
 
         <div className="db-main-grid">
-          {/* VOICE HUB AREA */}
           <div className="db-voice-hub">
-            <div className="db-glass db-recorder-card" id="voice-hub">
+            <div className="db-glass db-recorder-card">
               <div className="db-recorder-info">
-                <h3 className="db-recorder-title">AI Voice Hub</h3>
-                <p className="db-recorder-sub">Record any trade or cost instantly</p>
+                <h3 className="db-recorder-title">{t('AI Voice Hub', lang)}</h3>
+                <p className="db-recorder-sub">{t('Record any trade or cost instantly', lang)}</p>
               </div>
-              <VoiceRecorder 
-                variant="dark" 
-                onTranscriptComplete={handleNewTranscript} 
+              <VoiceRecorder
+                variant="dark"
+                onTranscriptComplete={handleNewTranscript}
               />
-              <div style={{ marginTop: '24px', fontSize: '12px', color: 'rgba(255,180,0,0.5)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>
-                Claude 3.5 Sonnet Active
-              </div>
             </div>
 
-            <div className="db-glass db-insight-hero">
-              <div className="db-insight-tag">
-                <Sparkles size={14} className="mr-2" />
-                Smart Insight
-              </div>
-              <p className="db-insight-text">
-                "Wuhwere <span>₵25</span> Yawoada biara nti tomato a ɛporɔ. Yawda biara tew tomato no so 15%."
-              </p>
-              <div className="db-insight-cta">
-                See Full Analysis <ArrowRight size={16} />
+            <div className="db-glass" style={{ background: 'linear-gradient(135deg, rgba(0,168,107,0.1) 0%, transparent 100%)', display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+              <img src={tomatoesImg} className="db-stat-img-bg" style={{ opacity: 0.15, filter: 'none' }} alt="" />
+              <div style={{ position: 'relative', zIndex: 5 }}>
+                <div style={{ background: 'rgba(0,168,107,0.2)', color: '#00D68F', padding: '8px 16px', borderRadius: '100px', fontSize: '12px', fontWeight: 800, alignSelf: 'flex-start', marginBottom: '20px', display: 'inline-block' }}>Smart Insight</div>
+                <p style={{ fontSize: '24px', fontFamily: 'Sora', fontWeight: 700, lineHeight: 1.4, color: '#fff' }}>
+                  "Wuhwere <span>₵25</span> Yawoada biara nti tomato a ɛporɔ. Yawda biara tew tomato no so 15%."
+                </p>
+                <div style={{ marginTop: '30px', display: 'flex', alignItems: 'center', gap: '8px', color: '#FFB400', fontWeight: 800, fontSize: '15px', cursor: 'pointer' }}>
+                  See Full Analysis <ArrowRight size={18} />
+                </div>
               </div>
             </div>
           </div>
 
-          {/* LEFT SIDE: STATS & ACTIVITY */}
-          <div className="space-y-8">
-            <div className="db-stats-row">
-              <div className="db-glass db-stat-box profit">
+          <div className="space-y-6" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div className="db-glass db-stat-box profit">
+              <img src={fishImg} className="db-stat-img-bg" alt="" />
+              <div style={{ position: 'relative', zIndex: 5 }}>
                 <div className="db-stat-icon-wrap">
-                  <TrendingUp size={20} />
+                  <TrendingUp size={24} />
                 </div>
                 <div className="db-stat-value">₵{demoData.stats.todayProfit}</div>
-                <div className="db-stat-label">Daily Profit</div>
-              </div>
-
-              <div className="db-glass db-stat-box waste">
-                <div className="db-stat-icon-wrap">
-                  <TrendingDown size={20} />
-                </div>
-                <div className="db-stat-value">₵{demoData.stats.wasteLoss}</div>
-                <div className="db-stat-label">Waste Loss</div>
-              </div>
-
-              <div className="db-glass db-stat-box">
-                <div className="db-stat-icon-wrap">
-                  <Wallet size={20} />
-                </div>
-                <div className="db-stat-value">₵18.4k</div>
-                <div className="db-stat-label">Total Revenue</div>
+                <div className="db-stat-label">{t('Daily Profit', lang)}</div>
               </div>
             </div>
 
-            <section className="db-activity-section">
-              <div className="db-section-header">
-                <h3 className="db-section-title">Recent Activities</h3>
-                <a href="#" className="db-section-link">View All <ArrowRight size={14} style={{ display: 'inline', marginLeft: '4px' }} /></a>
+            <div className="db-glass db-stat-box waste">
+              <img src={tomatoesImg} className="db-stat-img-bg" alt="" />
+              <div style={{ position: 'relative', zIndex: 5 }}>
+                <div className="db-stat-icon-wrap">
+                  <TrendingDown size={24} />
+                </div>
+                <div className="db-stat-value">₵{demoData.stats.wasteLoss}</div>
+                <div className="db-stat-label">{t('Waste Loss', lang)}</div>
               </div>
-              <div className="db-activity-list">
+            </div>
+
+            <div className="db-glass db-stat-box">
+              <img src={nutsImg} className="db-stat-img-bg" alt="" />
+              <div style={{ position: 'relative', zIndex: 5 }}>
+                <div className="db-stat-icon-wrap">
+                  <Wallet size={24} />
+                </div>
+                <div className="db-stat-value">₵18.4k</div>
+                <div className="db-stat-label">{t('Total Revenue', lang)}</div>
+              </div>
+            </div>
+          </div>
+
+          <aside className="space-y-6" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div className="db-glass db-trust-card">
+              <div className="db-trust-circle">{demoData.user.trustScore}</div>
+              <p className="db-trust-label">{t('Trust Score: Verified', lang)}</p>
+              <Link to="/trust" className="db-trust-btn">{t('Open TrustHub ↗', lang)}</Link>
+            </div>
+
+            <div className="db-glass">
+              <div className="db-section-header">
+                <h3 className="db-section-title">{t('Recent Activities', lang)}</h3>
+              </div>
+              <div className="space-y-4">
                 {transactions.map((t) => (
                   <div key={t.id} className="db-activity-item">
                     <div className="db-activity-icon">
-                      <Clock size={18} />
+                      <Clock size={16} />
                     </div>
                     <div>
-                      <p className="db-activity-text">"{t.text}"</p>
-                      <p className="db-activity-time">{t.date}</p>
+                      <p style={{ fontSize: '13px', fontWeight: 700 }}>"{t.text}"</p>
+                      <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>{t.date}</p>
                     </div>
                   </div>
                 ))}
               </div>
-            </section>
-          </div>
-
-          {/* RIGHT SIDEBAR */}
-          <aside className="db-sidebar">
-            <div className="db-glass db-trust-widget">
-              <div className="db-trust-score-circle">
-                {demoData.user.trustScore}
-              </div>
-              <p className="db-trust-status">Trust Score: Verified</p>
-              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginTop: '8px' }}>
-                Your score rose 4 points this week!
-              </p>
-              <Link to="/trust" style={{ 
-                display: 'block', marginTop: '20px', padding: '12px', 
-                background: 'rgba(255,255,255,0.05)', borderRadius: '12px',
-                color: '#fff', fontSize: '13px', fontWeight: 700, textDecoration: 'none'
-              }}>
-                Open TrustHub ↗
-              </Link>
-            </div>
-
-            <div className="db-glass db-market-widget">
-              <span className="db-market-tag">Market Trends</span>
-              <div className="space-y-4">
-                {demoData.marketIntelligence.map((item, i) => (
-                  <div key={i} className="db-market-item">
-                    <div className="db-market-dot" />
-                    <span>{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="db-glass" style={{ textAlign: 'center', padding: '24px' }}>
-              <PieChart size={32} className="mx-auto mb-4 text-[#FFB400] opacity-50" />
-              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>
-                Inventory health is at 92%.
-              </p>
             </div>
           </aside>
         </div>
@@ -310,21 +228,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
-const Sparkles = ({ size, className }: { size: number, className: string }) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    width={size} 
-    height={size} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
-    className={className}
-  >
-    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
-    <path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>
-  </svg>
-);

@@ -1,143 +1,156 @@
-import { useState, useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, ShieldCheck, TrendingUp, User, Menu, X } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { LayoutGrid, TrendingUp, ShieldCheck, LogOut, User } from 'lucide-react';
+
+const styles = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Noto+Sans:wght@400;500;600&display=swap');
+
+  .nav-root * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  .nav-desktop {
+    position: sticky; top: 0; z-index: 100;
+    width: 100%;
+    background: #1A0A00;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex; flex-direction: column;
+  }
+  .nav-stripe {
+    height: 4px;
+    background: repeating-linear-gradient(90deg, #FFB400 0, #FFB400 40px, #E63B1E 40px, #E63B1E 80px, #00A86B 80px, #00A86B 120px, #1A0A00 120px, #1A0A00 160px);
+    width: 100%;
+  }
+  .nav-container {
+    max-width: 1240px; margin: 0 auto; width: 100%;
+    padding: 18px 24px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  
+  .nav-logo { 
+    display: flex; align-items: center; gap: 12px;
+    text-decoration: none; font-family: 'Sora', sans-serif; font-weight: 800; font-size: 22px; color: #fff; 
+  }
+  .nav-logo span { color: #FFB400; }
+  .nav-logo-mark {
+    width: 36px; height: 36px; border-radius: 8px; background: #FFB400;
+    display: flex; align-items: center; justify-content: center; color: #1A0A00; font-size: 18px;
+  }
+
+  .nav-links { display: flex; gap: 40px; align-items: center; }
+  .nav-link {
+    display: flex; align-items: center; gap: 10px;
+    text-decoration: none; font-family: 'Sora', sans-serif;
+    font-size: 15px; font-weight: 700; color: rgba(255, 255, 255, 0.5);
+    transition: all 0.2s; padding: 8px 0; border-bottom: 3px solid transparent;
+  }
+  .nav-link:hover { color: #fff; }
+  .nav-link.active { color: #FFB400; border-bottom-color: #FFB400; }
+  
+  .nav-user {
+    display: flex; align-items: center; gap: 12px;
+    padding-left: 32px; border-left: 1px solid rgba(255, 255, 255, 0.1);
+    margin-left: 12px;
+  }
+  .nav-avatar {
+    width: 38px; height: 38px; border-radius: 12px; background: rgba(255, 255, 255, 0.05);
+    display: flex; align-items: center; justify-content: center; color: #FFB400;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* MOBILE NAVIGATION */
+  .nav-mobile {
+    display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000;
+    background: rgba(26, 10, 0, 0.96); backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 14px 24px calc(14px + env(safe-area-inset-bottom));
+    justify-content: space-around; align-items: center;
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+  }
+  
+  @media (max-width: 860px) {
+    .nav-desktop { display: none; }
+    .nav-mobile { display: flex; }
+  }
+
+  .nav-mob-item {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    text-decoration: none; color: rgba(255, 255, 255, 0.35);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    flex: 1;
+  }
+  .nav-mob-item.active { color: #FFB400; transform: translateY(-4px); }
+  .nav-mob-text { font-family: 'Sora', sans-serif; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+  
+  .nav-mob-indicator {
+    position: absolute; bottom: -8px; width: 4px; height: 4px; border-radius: 50%;
+    background: #FFB400; opacity: 0; transition: all 0.3s;
+  }
+  .nav-mob-item.active .nav-mob-indicator { opacity: 1; transform: scale(1.5); }
+`;
 
 export const Navbar = () => {
-  const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
 
-  // Close mobile menu on route change
-  useEffect(() => {
-    setIsOpen(false);
-  }, [location]);
-
   const navItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Trust Score', path: '/trust', icon: ShieldCheck },
+    { name: 'Dashboard', path: '/dashboard', icon: LayoutGrid },
     { name: 'Insights', path: '/insights', icon: TrendingUp },
+    { name: 'TrustHub', path: '/trust', icon: ShieldCheck },
+    { name: 'Account', path: '/profile', icon: User },
   ];
 
+  const isActive = (path: string) => location.pathname === path;
+
   return (
-    <nav className="sticky top-0 z-50 w-full glass border-b border-slate-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-200">
-              <span className="text-white font-display font-bold text-xl">M</span>
-            </div>
-            <span className="text-2xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-indigo-600">
-              MarketLink
-            </span>
-          </div>
-
-          {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-8">
+    <div className="nav-root">
+      <style>{styles}</style>
+      
+      {/* Desktop Top Nav */}
+      <nav className="nav-desktop">
+        <div className="nav-stripe" />
+        <div className="nav-container">
+          <Link to="/" className="nav-logo">
+            <div className="nav-logo-mark">M</div>
+            Market<span>Link</span>
+          </Link>
+          
+          <div className="nav-links">
             {navItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) =>
-                  `flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary-600 ${
-                    isActive ? 'text-primary-600' : 'text-slate-600'
-                  }`
-                }
+              <Link 
+                key={item.path} 
+                to={item.path} 
+                className={`nav-link ${isActive(item.path) ? 'active' : ''}`}
               >
-                <item.icon className="w-4 h-4" />
+                <item.icon size={20} />
                 {item.name}
-              </NavLink>
+              </Link>
             ))}
-            <div className="ml-4 flex items-center gap-3 pl-8 border-l border-slate-200">
-              <div className="text-right">
-                <p className="text-xs font-semibold text-slate-900 leading-none">Ama Mensah</p>
-                <p className="text-[10px] text-slate-500">Tomato Trader</p>
+            
+            <div className="nav-user">
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '13px', fontWeight: 800, color: '#fff' }}>Ama Mensah</div>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>Trader</div>
               </div>
-              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 overflow-hidden ring-2 ring-primary-50">
-                <span className="text-sm font-bold text-primary-600">AM</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Mobile Menu Button */}
-          <div className="md:hidden">
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
-            >
-              {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile Nav */}
-      {isOpen && (
-        <div className="md:hidden glass border-t border-slate-200 animate-in slide-in-from-top duration-300">
-          <div className="px-4 pt-2 pb-6 space-y-2">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) =>
-                  `flex items-center gap-4 px-4 py-3 rounded-xl text-base font-medium transition-all ${
-                    isActive 
-                      ? 'bg-primary-50 text-primary-600 border-l-4 border-primary-600' 
-                      : 'text-slate-600 hover:bg-slate-50'
-                  }`
-                }
-              >
-                <item.icon className="w-5 h-5" />
-                {item.name}
-              </NavLink>
-            ))}
-            <div className="mt-6 pt-6 border-t border-slate-200 flex items-center gap-4 px-4">
-              <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center border border-primary-200">
-                <span className="text-lg font-bold text-primary-700">AM</span>
-              </div>
-              <div>
-                <p className="text-sm font-bold text-slate-900">Ama Mensah</p>
-                <p className="text-xs text-slate-500">Tomato Trader</p>
+              <div className="nav-avatar">
+                <User size={20} />
               </div>
             </div>
           </div>
         </div>
-      )}
+      </nav>
 
-      {/* Mobile Bottom Bar (as per request) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-200 px-6 py-3 flex justify-between items-center z-50 rounded-t-3xl shadow-[0_-8px_30px_rgb(0,0,0,0.04)]">
+      {/* Mobile Bottom Nav */}
+      <nav className="nav-mobile">
         {navItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            className={({ isActive }) =>
-              `flex flex-col items-center gap-1 transition-all ${
-                isActive ? 'text-primary-600 scale-110' : 'text-slate-400'
-              }`
-            }
+          <Link 
+            key={item.path} 
+            to={item.path} 
+            className={`nav-mob-item ${isActive(item.path) ? 'active' : ''}`}
+            style={{ position: 'relative' }}
           >
-            {({ isActive }) => (
-              <>
-                <item.icon className={`w-6 h-6 ${isActive ? 'fill-primary-100' : ''}`} />
-                <span className="text-[10px] font-bold uppercase tracking-wider">{item.name}</span>
-              </>
-            )}
-          </NavLink>
+            <item.icon size={26} strokeWidth={isActive(item.path) ? 2.5 : 2} />
+            <span className="nav-mob-text">{item.name}</span>
+            <div className="nav-mob-indicator" />
+          </Link>
         ))}
-        <NavLink
-            to="/profile"
-            className={({ isActive }) =>
-              `flex flex-col items-center gap-1 transition-all ${
-                isActive ? 'text-primary-600 scale-110' : 'text-slate-400'
-              }`
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <User className={`w-6 h-6 ${isActive ? 'fill-primary-100' : ''}`} />
-                <span className="text-[10px] font-bold uppercase tracking-wider">Profile</span>
-              </>
-            )}
-          </NavLink>
-      </div>
-    </nav>
+      </nav>
+    </div>
   );
 };

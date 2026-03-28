@@ -1,183 +1,522 @@
 import { useState } from 'react';
-import { TrendingUp, ShoppingBag, AlertCircle, Sparkles, ArrowUpRight } from 'lucide-react';
+import { TrendingUp, ShoppingBag, AlertCircle, Sparkles, ArrowUpRight, TrendingDown } from 'lucide-react';
 import { demoData } from '../data/demoData';
+
+const styles = `
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Noto+Sans:wght@400;500;600&display=swap');
+
+  .ins-root * { box-sizing: border-box; margin: 0; padding: 0; }
+  .ins-root {
+    font-family: 'Noto Sans', sans-serif;
+    background: #FFF8F0;
+    min-height: 100vh;
+    padding-bottom: 120px;
+    color: #1A0A00;
+  }
+  .ins-display { font-family: 'Sora', sans-serif; }
+
+  /* HEADER */
+  .ins-header {
+    max-width: 1200px; margin: 0 auto 48px;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    flex-wrap: wrap; gap: 24px;
+  }
+  .ins-header-eyebrow {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 2px; color: #FFB400; margin-bottom: 8px;
+  }
+  .ins-header-title {
+    font-family: 'Sora', sans-serif;
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 800; line-height: 1.05; color: #1A0A00;
+  }
+  .ins-header-title span { color: #FFB400; }
+  .ins-header-sub { font-size: 15px; color: #999; margin-top: 8px; font-weight: 500; }
+
+  /* TIME TOGGLE */
+  .ins-toggle {
+    display: flex; background: #fff;
+    border: 1px solid #EDE5DC; border-radius: 14px;
+    padding: 5px; gap: 4px;
+    box-shadow: 0 2px 12px rgba(26,10,0,0.06);
+  }
+  .ins-toggle-btn {
+    padding: 10px 22px; border-radius: 10px; border: none; cursor: pointer;
+    font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 700;
+    transition: all 0.2s; background: transparent; color: #BBB;
+  }
+  .ins-toggle-btn:hover { color: #1A0A00; }
+  .ins-toggle-btn.active {
+    background: #1A0A00; color: #FFB400;
+    box-shadow: 0 4px 14px rgba(26,10,0,0.2);
+  }
+
+  /* SUMMARY STRIP */
+  .ins-summary-strip {
+    max-width: 1200px; margin: 0 auto 36px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+  }
+  @media (max-width: 900px) { .ins-summary-strip { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 480px) { .ins-summary-strip { grid-template-columns: 1fr 1fr; } }
+
+  .ins-stat-card {
+    background: #fff; border-radius: 22px;
+    border: 1px solid #EDE5DC;
+    padding: 22px 24px;
+    position: relative; overflow: hidden;
+    transition: transform 0.2s;
+  }
+  .ins-stat-card:hover { transform: translateY(-3px); }
+  .ins-stat-card::before {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+  }
+  .ins-stat-card.amber::before { background: #FFB400; }
+  .ins-stat-card.green::before { background: #00A86B; }
+  .ins-stat-card.red::before { background: #E63B1E; }
+  .ins-stat-card.dark::before { background: #1A0A00; }
+
+  .ins-stat-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #BBB; margin-bottom: 10px; }
+  .ins-stat-val { font-family: 'Sora', sans-serif; font-size: 28px; font-weight: 800; color: #1A0A00; line-height: 1; margin-bottom: 8px; }
+  .ins-stat-val.green { color: #00A86B; }
+  .ins-stat-val.red { color: #E63B1E; }
+  .ins-stat-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 700; border-radius: 100px; padding: 3px 10px;
+  }
+  .ins-stat-badge.up { background: #E8F8F0; color: #00A86B; }
+  .ins-stat-badge.down { background: #FEE8E8; color: #E63B1E; }
+
+  /* MAIN GRID */
+  .ins-main-grid {
+    max-width: 1200px; margin: 0 auto 36px;
+    display: grid; grid-template-columns: 1fr 380px; gap: 20px;
+  }
+  @media (max-width: 1024px) { .ins-main-grid { grid-template-columns: 1fr; } }
+
+  /* CHART CARD */
+  .ins-chart-card {
+    background: #1A0A00; border-radius: 32px;
+    padding: 36px;
+  }
+  .ins-chart-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 36px; }
+  .ins-chart-title { font-family: 'Sora', sans-serif; font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 4px; }
+  .ins-chart-sub { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255,255,255,0.3); }
+  .ins-chart-legend { display: flex; gap: 16px; }
+  .ins-legend-item { display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.8px; }
+  .ins-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  /* BAR CHART */
+  .ins-bars {
+    display: flex; align-items: flex-end; gap: 10px;
+    height: 200px; padding: 0 4px;
+  }
+  .ins-bar-group {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    height: 100%; position: relative; cursor: pointer;
+  }
+  .ins-bar-group:hover .ins-bar-tooltip { opacity: 1; transform: translateY(0); }
+  .ins-bar-tooltip {
+    position: absolute; top: -44px;
+    background: #FFB400; color: #1A0A00;
+    font-family: 'Sora', sans-serif; font-size: 11px; font-weight: 800;
+    padding: 5px 10px; border-radius: 8px; white-space: nowrap;
+    opacity: 0; transform: translateY(4px); transition: all 0.15s;
+    pointer-events: none;
+  }
+  .ins-bar-tooltip::after {
+    content: ''; position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%);
+    border: 5px solid transparent; border-bottom: none; border-top-color: #FFB400;
+  }
+  .ins-bar-inner { width: 100%; position: relative; flex: 1; display: flex; align-items: flex-end; }
+  .ins-bar-bg {
+    position: absolute; bottom: 0; width: 100%;
+    background: rgba(255,255,255,0.05); border-radius: 10px 10px 6px 6px;
+  }
+  .ins-bar-fill {
+    position: absolute; bottom: 0; width: 100%;
+    background: #FFB400; border-radius: 10px 10px 6px 6px;
+    transition: height 0.6s cubic-bezier(.4,0,.2,1);
+  }
+  .ins-bar-fill.highlighted { background: #FFD060; }
+  .ins-bar-label { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.25); margin-top: 10px; text-transform: uppercase; }
+
+  /* TOTAL LINE */
+  .ins-chart-total {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 28px; padding-top: 24px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .ins-chart-total-label { font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 1px; }
+  .ins-chart-total-val { font-family: 'Sora', sans-serif; font-size: 26px; font-weight: 800; color: #FFB400; }
+
+  /* WASTE CARD */
+  .ins-waste-card {
+    background: #fff; border-radius: 32px;
+    border: 1px solid #EDE5DC; padding: 32px;
+    display: flex; flex-direction: column; gap: 0;
+  }
+  .ins-waste-tag {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: #FEE8E8; border-radius: 100px; padding: 5px 12px;
+    font-size: 11px; font-weight: 700; color: #E63B1E;
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px;
+    width: fit-content;
+  }
+  .ins-waste-title { font-family: 'Sora', sans-serif; font-size: 20px; font-weight: 800; color: #1A0A00; margin-bottom: 6px; }
+  .ins-waste-subtitle { font-size: 13px; color: #AAA; margin-bottom: 28px; }
+  .ins-waste-item { margin-bottom: 20px; }
+  .ins-waste-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .ins-waste-item-name { font-size: 13px; font-weight: 700; color: #1A0A00; }
+  .ins-waste-item-loss { font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 800; color: #E63B1E; }
+  .ins-waste-track { height: 8px; background: #F5EDE8; border-radius: 100px; overflow: hidden; }
+  .ins-waste-fill { height: 100%; border-radius: 100px; }
+  .ins-waste-fill.red { background: #E63B1E; }
+  .ins-waste-fill.orange { background: #FF8C42; }
+  .ins-waste-fill.amber { background: #FFB400; }
+  .ins-waste-divider { height: 1px; background: #F5EDE8; margin: 24px 0; }
+  .ins-ai-tip {
+    display: flex; gap: 14px; align-items: flex-start;
+    background: #FFF8F0; border-radius: 16px; padding: 16px;
+    border: 1px solid #EDE5DC;
+  }
+  .ins-ai-icon {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: #FFB400; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ins-ai-label { font-size: 10px; font-weight: 700; color: #FFB400; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .ins-ai-text { font-size: 13px; color: #555; line-height: 1.6; }
+
+  /* LOWER GRID */
+  .ins-lower-grid {
+    max-width: 1200px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;
+  }
+  @media (max-width: 1024px) { .ins-lower-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 640px) { .ins-lower-grid { grid-template-columns: 1fr; } }
+
+  /* TOP PRODUCTS CARD */
+  .ins-products-card {
+    background: #fff; border-radius: 28px;
+    border: 1px solid #EDE5DC; padding: 30px;
+  }
+  .ins-card-title { font-family: 'Sora', sans-serif; font-size: 18px; font-weight: 800; color: #1A0A00; margin-bottom: 24px; }
+  .ins-product-row {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 18px;
+  }
+  .ins-product-row:last-child { margin-bottom: 0; }
+  .ins-product-rank {
+    font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 800;
+    color: #DDD; width: 18px; flex-shrink: 0;
+  }
+  .ins-product-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+  .ins-product-name { font-size: 14px; font-weight: 600; color: #1A0A00; flex: 1; }
+  .ins-product-bar-wrap { flex: 1; height: 6px; background: #F5EDE8; border-radius: 100px; overflow: hidden; }
+  .ins-product-bar-fill { height: 100%; border-radius: 100px; }
+  .ins-product-share { font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 800; color: #1A0A00; width: 36px; text-align: right; }
+
+  /* PRICING CARD */
+  .ins-pricing-card {
+    background: #1A0A00; border-radius: 28px; padding: 30px;
+  }
+  .ins-pricing-title { font-family: 'Sora', sans-serif; font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 6px; }
+  .ins-pricing-sub { font-size: 12px; color: rgba(255,255,255,0.35); margin-bottom: 24px; }
+  .ins-price-item {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px; padding: 16px; margin-bottom: 12px;
+  }
+  .ins-price-item:last-of-type { margin-bottom: 0; }
+  .ins-price-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .ins-price-name { font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1px; }
+  .ins-price-change { display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; }
+  .ins-price-change.up { color: #00D68F; }
+  .ins-price-change.down { color: #FF6B6B; }
+  .ins-price-vals { display: flex; align-items: baseline; gap: 8px; }
+  .ins-price-new { font-family: 'Sora', sans-serif; font-size: 22px; font-weight: 800; color: #FFB400; }
+  .ins-price-old { font-size: 13px; color: rgba(255,255,255,0.25); text-decoration: line-through; }
+  .ins-price-reason { font-size: 11px; color: rgba(255,255,255,0.3); margin-top: 6px; line-height: 1.5; }
+  .ins-update-btn {
+    width: 100%; margin-top: 16px; padding: 14px;
+    background: #FFB400; color: #1A0A00;
+    border: none; border-radius: 12px; cursor: pointer;
+    font-family: 'Sora', sans-serif; font-weight: 800; font-size: 13px;
+    transition: all 0.2s; letter-spacing: 0.3px;
+  }
+  .ins-update-btn:hover { background: #FFC833; transform: translateY(-1px); }
+
+  /* ALERTS CARD */
+  .ins-alerts-card {
+    background: #FFF8F0; border-radius: 28px;
+    border: 1px solid #EDE5DC; padding: 30px;
+    display: flex; flex-direction: column;
+  }
+  .ins-alerts-header { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; }
+  .ins-live-dot { width: 8px; height: 8px; border-radius: 50%; background: #E63B1E; animation: pulse-dot 1.5s infinite; }
+  @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(1.5)} }
+  .ins-alerts-title { font-family: 'Sora', sans-serif; font-size: 18px; font-weight: 800; color: #1A0A00; }
+  .ins-alert-item { display: flex; gap: 14px; padding: 16px 0; border-bottom: 1px solid #F0E8E0; }
+  .ins-alert-item:last-of-type { border-bottom: none; }
+  .ins-alert-icon {
+    width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ins-alert-icon.danger { background: #FEE8E8; }
+  .ins-alert-icon.success { background: #E8F8F0; }
+  .ins-alert-icon.warn { background: #FFF3D0; }
+  .ins-alert-title { font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 700; color: #1A0A00; margin-bottom: 4px; }
+  .ins-alert-body { font-size: 12px; color: #888; line-height: 1.6; }
+  .ins-alert-time { font-size: 10px; font-weight: 700; color: #CCC; text-transform: uppercase; letter-spacing: 0.8px; margin-top: 4px; }
+  .ins-reports-btn {
+    margin-top: 20px; width: 100%; padding: 14px;
+    background: #1A0A00; color: #FFB400;
+    border: none; border-radius: 12px; cursor: pointer;
+    font-family: 'Sora', sans-serif; font-weight: 800; font-size: 13px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: all 0.2s;
+  }
+  .ins-reports-btn:hover { background: #2A1500; transform: translateY(-1px); }
+`;
+
+const barData = [
+  { label: 'Mon', profit: 58, sales: 72 },
+  { label: 'Tue', profit: 42, sales: 60 },
+  { label: 'Wed', profit: 74, sales: 85 },
+  { label: 'Thu', profit: 50, sales: 65 },
+  { label: 'Fri', profit: 88, sales: 95 },
+  { label: 'Sat', profit: 95, sales: 100 },
+  { label: 'Sun', profit: 62, sales: 78 },
+];
+
+const products = [
+  { name: 'Tomatoes', share: 62, color: '#E63B1E' },
+  { name: 'Onions', share: 24, color: '#FFB400' },
+  { name: 'Plantains', share: 14, color: '#00A86B' },
+];
+
+const wasteItems = [
+  { name: 'Tomato Spoilage', loss: demoData.stats.wasteLoss, pct: 65, cls: 'red' },
+  { name: 'Onion Shrinkage', loss: 45, pct: 28, cls: 'orange' },
+  { name: 'Plantain Bruising', loss: 20, pct: 14, cls: 'amber' },
+];
+
+const priceRecs = [
+  { name: 'Tomatoes', current: '₵12.00', old: '₵10.50', change: '+14%', dir: 'up', reason: 'Market scarcity detected near Makola.' },
+  { name: 'Onions', current: '₵8.50', old: '₵9.00', change: '-6%', dir: 'down', reason: 'Surplus from border trade this week.' },
+];
+
+const alerts = [
+  { type: 'danger', icon: <AlertCircle size={18} color="#E63B1E" />, title: 'Plantain Shortage', body: 'Central region supply delayed. Expect 20% price rise by tomorrow.', time: '2 hrs ago' },
+  { type: 'success', icon: <TrendingUp size={18} color="#00A86B" />, title: 'Onion Surplus', body: 'Buy now — prices are at 6-month low. Good time to stock up.', time: '5 hrs ago' },
+  { type: 'warn', icon: <Sparkles size={18} color="#FFB400" />, title: 'Thursday Pattern', body: 'Your tomato waste peaks every Thursday. Reduce Wednesday orders by 15%.', time: 'AI Insight' },
+];
 
 export default function Insights() {
   const [timeRange, setTimeRange] = useState('Month');
 
+  const totalProfit = barData.reduce((s, d) => s + d.profit * 100, 0);
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-32 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
+    <div className="ins-root">
+      <style>{styles}</style>
+
+      {/* HEADER */}
+      <div className="ins-header" style={{ paddingTop: '60px' }}>
         <div>
-          <h1 className="text-4xl md:text-5xl font-display font-black text-slate-900 mb-2 italic">Business Insights</h1>
-          <p className="text-slate-500 font-medium">Analyze your growth and maximize your margins.</p>
+          <div className="ins-header-eyebrow">W'adwuma Nhoma · Business Intelligence</div>
+          <h1 className="ins-header-title ins-display">
+            Wʼahonya<br /><span>Ho Adanse</span>
+          </h1>
+          <p className="ins-header-sub">Track profits, cut waste, and grow your market edge.</p>
         </div>
-        <div className="flex bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm">
-          {['Week', 'Month', '3 Months'].map((range) => (
+        <div className="ins-toggle">
+          {['Week', 'Month', '3 Months'].map((r) => (
             <button
-              key={range}
-              onClick={() => setTimeRange(range)}
-              className={`px-6 py-2 rounded-xl text-sm font-black transition-all ${
-                timeRange === range ? 'bg-primary-600 text-white shadow-lg shadow-primary-200' : 'text-slate-400 hover:text-slate-600'
-              }`}
+              key={r}
+              className={`ins-toggle-btn ${timeRange === r ? 'active' : ''}`}
+              onClick={() => setTimeRange(r)}
+              type="button"
             >
-              {range}
+              {r}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Main Analytics Grid */}
-      <div className="grid lg:grid-cols-3 gap-8 mb-12">
-        {/* Profit/Loss Simulated Chart */}
-        <div className="lg:col-span-2 bg-white rounded-[40px] border border-slate-100 p-8 shadow-sm">
-           <div className="flex justify-between items-center mb-10">
-              <div>
-                <h3 className="text-xl font-display font-black text-slate-900 italic">Profit Trends</h3>
-                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Net Income Over Time</p>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-primary-600" />
-                  <span className="text-[10px] font-black text-slate-500 uppercase">Profit</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-slate-200" />
-                  <span className="text-[10px] font-black text-slate-500 uppercase">Sales</span>
-                </div>
-              </div>
-           </div>
+      {/* SUMMARY STRIP */}
+      <div className="ins-summary-strip">
+        <div className="ins-stat-card amber">
+          <div className="ins-stat-label">Total Revenue</div>
+          <div className="ins-stat-val">₵18,400</div>
+          <span className="ins-stat-badge up">↑ 12% vs last month</span>
+        </div>
+        <div className="ins-stat-card green">
+          <div className="ins-stat-label">Net Profit</div>
+          <div className="ins-stat-val green">₵4,250</div>
+          <span className="ins-stat-badge up">↑ 8% vs last month</span>
+        </div>
+        <div className="ins-stat-card red">
+          <div className="ins-stat-label">Waste Losses</div>
+          <div className="ins-stat-val red">₵{demoData.stats.wasteLoss}</div>
+          <span className="ins-stat-badge down">↑ 5% — needs attention</span>
+        </div>
+        <div className="ins-stat-card dark">
+          <div className="ins-stat-label">Trust Score</div>
+          <div className="ins-stat-val">78 / 100</div>
+          <span className="ins-stat-badge up">↑ 4 pts this month</span>
+        </div>
+      </div>
 
-           <div className="h-64 flex items-end justify-between gap-3 md:gap-6 px-4">
-              {[60, 45, 75, 55, 90, 65, 80].map((h, i) => (
-                <div key={i} className="flex-1 group relative flex flex-col items-center">
-                  <div className="absolute -top-10 bg-slate-900 text-white text-[10px] font-black px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                    ₵{h * 10}
-                  </div>
-                  <div 
-                    className="w-full bg-slate-100 rounded-2xl transition-all duration-500 group-hover:bg-slate-200"
-                    style={{ height: `${h + 10}%` }}
+      {/* MAIN GRID */}
+      <div className="ins-main-grid">
+        {/* BAR CHART */}
+        <div className="ins-chart-card">
+          <div className="ins-chart-header">
+            <div>
+              <div className="ins-chart-title ins-display">Profit Trends</div>
+              <div className="ins-chart-sub">Net income · {timeRange}</div>
+            </div>
+            <div className="ins-chart-legend">
+              <div className="ins-legend-item">
+                <div className="ins-legend-dot" style={{ background: '#FFB400' }} />
+                Profit
+              </div>
+              <div className="ins-legend-item">
+                <div className="ins-legend-dot" style={{ background: 'rgba(255,255,255,0.1)' }} />
+                Sales
+              </div>
+            </div>
+          </div>
+
+          <div className="ins-bars">
+            {barData.map((d, i) => (
+              <div className="ins-bar-group" key={i}>
+                <div className="ins-bar-tooltip">₵{(d.profit * 100).toLocaleString()}</div>
+                <div className="ins-bar-inner">
+                  <div
+                    className="ins-bar-bg"
+                    style={{ height: `${d.sales}%` }}
                   />
-                  <div 
-                    className="w-full bg-primary-600 rounded-2xl absolute bottom-0 transition-all duration-700 ease-out"
-                    style={{ height: `${h}%` }}
+                  <div
+                    className={`ins-bar-fill ${d.profit === 95 ? 'highlighted' : ''}`}
+                    style={{ height: `${d.profit}%` }}
                   />
-                  <span className="mt-4 text-[10px] font-black text-slate-400 uppercase tracking-tighter">Day {i+1}</span>
                 </div>
-              ))}
-           </div>
+                <span className="ins-bar-label">{d.label}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="ins-chart-total">
+            <span className="ins-chart-total-label">Total {timeRange} Profit</span>
+            <span className="ins-chart-total-val ins-display">₵{totalProfit.toLocaleString()}</span>
+          </div>
         </div>
 
-        {/* Waste Analysis Card */}
-        <div className="bg-red-50 rounded-[40px] border border-red-100 p-8 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-8 opacity-5">
-            <ShoppingBag className="w-32 h-32" />
+        {/* WASTE CARD */}
+        <div className="ins-waste-card">
+          <div className="ins-waste-tag">
+            <ShoppingBag size={12} />
+            Spoilage Alert
           </div>
-          <h3 className="text-xl font-display font-black text-red-900 italic mb-6">Waste Analysis</h3>
-          <div className="space-y-6 relative z-10">
-            <div>
-              <div className="flex justify-between text-xs font-black text-red-700 uppercase tracking-wider mb-2">
-                <span>Tomato Spoilage</span>
-                <span>₵{demoData.stats.wasteLoss} Loss</span>
+          <div className="ins-waste-title ins-display">Waste Analysis</div>
+          <div className="ins-waste-subtitle">Where your money is leaking</div>
+
+          {wasteItems.map((w, i) => (
+            <div className="ins-waste-item" key={i}>
+              <div className="ins-waste-row">
+                <span className="ins-waste-item-name">{w.name}</span>
+                <span className="ins-waste-item-loss">−₵{w.loss}</span>
               </div>
-              <div className="w-full h-3 bg-red-200/50 rounded-full overflow-hidden">
-                <div className="h-full bg-red-500" style={{ width: '65%' }} />
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between text-xs font-black text-red-700 uppercase tracking-wider mb-2">
-                <span>Onion Shrinkage</span>
-                <span>₵45 Loss</span>
-              </div>
-              <div className="w-full h-3 bg-red-200/50 rounded-full overflow-hidden">
-                <div className="h-full bg-red-500" style={{ width: '25%' }} />
+              <div className="ins-waste-track">
+                <div className={`ins-waste-fill ${w.cls}`} style={{ width: `${w.pct}%` }} />
               </div>
             </div>
-            <div className="pt-6 border-t border-red-200/50">
-              <div className="flex items-start gap-4">
-                 <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center flex-shrink-0">
-                    <Sparkles className="w-5 h-5 text-red-600" />
-                 </div>
-                 <p className="text-sm font-bold text-red-800 italic leading-relaxed">
-                   "Your tomato waste peaks on Thursdays. Reduce purchase by 15% on Wednesdays."
-                 </p>
+          ))}
+
+          <div className="ins-waste-divider" />
+
+          <div className="ins-ai-tip">
+            <div className="ins-ai-icon">
+              <Sparkles size={18} color="#1A0A00" />
+            </div>
+            <div>
+              <div className="ins-ai-label">AI Insight</div>
+              <div className="ins-ai-text">
+                Your tomato waste peaks on Thursdays. Reduce Wednesday purchases by 15% to save ~₵{Math.round(demoData.stats.wasteLoss * 0.4)}/month.
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {/* Top Products */}
-        <div className="bg-white rounded-[40px] border border-slate-100 p-8 shadow-sm">
-          <h3 className="text-xl font-display font-black text-slate-900 italic mb-8">Top Selling</h3>
-          <div className="space-y-6">
-            {[
-              { name: 'Tomatoes', share: '62%', color: 'bg-red-500' },
-              { name: 'Onions', share: '24%', color: 'bg-primary-500' },
-              { name: 'Plantains', share: '14%', color: 'bg-yellow-500' }
-            ].map((p, i) => (
-              <div key={i} className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className={`w-3 h-3 rounded-full ${p.color}`} />
-                  <span className="font-display font-bold text-slate-800">{p.name}</span>
-                </div>
-                <span className="text-sm font-black text-slate-400">{p.share}</span>
+      {/* LOWER GRID */}
+      <div className="ins-lower-grid">
+        {/* TOP PRODUCTS */}
+        <div className="ins-products-card">
+          <div className="ins-card-title ins-display">Top Selling</div>
+          {products.map((p, i) => (
+            <div className="ins-product-row" key={i}>
+              <span className="ins-product-rank">#{i + 1}</span>
+              <div className="ins-product-dot" style={{ background: p.color }} />
+              <span className="ins-product-name">{p.name}</span>
+              <div className="ins-product-bar-wrap">
+                <div
+                  className="ins-product-bar-fill"
+                  style={{ width: `${p.share}%`, background: p.color }}
+                />
               </div>
-            ))}
-          </div>
+              <span className="ins-product-share">{p.share}%</span>
+            </div>
+          ))}
         </div>
 
-        {/* Price Recommendation */}
-        <div className="bg-primary-50 rounded-[40px] border border-primary-100 p-8 shadow-sm">
-          <h3 className="text-xl font-display font-black text-primary-900 italic mb-8">Pricing Tips</h3>
-          <div className="space-y-4">
-             <div className="p-4 bg-white rounded-2xl border border-primary-100">
-                <div className="flex justify-between items-center mb-2">
-                  <h4 className="text-xs font-black text-primary-600 uppercase tracking-widest">Tomatoes</h4>
-                  <div className="flex items-center gap-1 text-market-green font-bold text-xs">
-                    <TrendingUp className="w-3 h-3" />
-                    +15%
-                  </div>
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-display font-black text-slate-900 italic">₵12.00</span>
-                  <span className="text-[10px] font-bold text-slate-400 line-through">₵10.50</span>
-                </div>
-                <p className="text-[10px] font-medium text-slate-500 mt-2 italic">Recommended price based on market scarcity.</p>
-             </div>
-             
-             <button className="w-full py-4 text-primary-600 font-black text-xs uppercase tracking-widest border-2 border-dashed border-primary-200 rounded-2xl hover:bg-primary-100/50 transition-all">
-                Update All Prices
-             </button>
-          </div>
+        {/* PRICING */}
+        <div className="ins-pricing-card">
+          <div className="ins-pricing-title ins-display">Pricing Tips</div>
+          <div className="ins-pricing-sub">AI-recommended prices based on market data</div>
+          {priceRecs.map((p, i) => (
+            <div className="ins-price-item" key={i}>
+              <div className="ins-price-row">
+                <span className="ins-price-name">{p.name}</span>
+                <span className={`ins-price-change ${p.dir}`}>
+                  {p.dir === 'up' ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+                  {p.change}
+                </span>
+              </div>
+              <div className="ins-price-vals">
+                <span className="ins-price-new">{p.current}</span>
+                <span className="ins-price-old">{p.old}</span>
+              </div>
+              <div className="ins-price-reason">{p.reason}</div>
+            </div>
+          ))}
+          <button className="ins-update-btn" type="button">
+            Update All Prices ↗
+          </button>
         </div>
 
-        {/* Market Alerts */}
-        <div className="bg-slate-900 rounded-[40px] p-8 text-white">
-           <div className="flex items-center gap-2 mb-8">
-              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">Live Alerts</h3>
-           </div>
-           <div className="space-y-6">
-             <div className="flex gap-4">
-                <AlertCircle className="w-6 h-6 text-red-400 flex-shrink-0" />
-                <div>
-                   <p className="font-bold text-sm mb-1 italic">Plantain Shortage</p>
-                   <p className="text-xs text-slate-400 leading-normal">Supplies from central region delayed. Expect 20% price hike tomorrow.</p>
-                </div>
-             </div>
-             <div className="flex gap-4">
-                <TrendingUp className="w-6 h-6 text-market-green flex-shrink-0" />
-                <div>
-                   <p className="font-bold text-sm mb-1 italic">Onion Boom</p>
-                   <p className="text-xs text-slate-400 leading-normal">Surplus supply from border trade. Buy now for next week.</p>
-                </div>
-             </div>
-             <button className="w-full mt-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white/10 transition-all">
-                See Global Reports <ArrowUpRight className="w-4 h-4" />
-             </button>
-           </div>
+        {/* ALERTS */}
+        <div className="ins-alerts-card">
+          <div className="ins-alerts-header">
+            <div className="ins-live-dot" />
+            <span className="ins-alerts-title ins-display">Live Alerts</span>
+          </div>
+          {alerts.map((a, i) => (
+            <div className="ins-alert-item" key={i}>
+              <div className={`ins-alert-icon ${a.type}`}>
+                {a.icon}
+              </div>
+              <div>
+                <div className="ins-alert-title">{a.title}</div>
+                <div className="ins-alert-body">{a.body}</div>
+                <div className="ins-alert-time">{a.time}</div>
+              </div>
+            </div>
+          ))}
+          <button className="ins-reports-btn" type="button">
+            See Global Reports
+            <ArrowUpRight size={15} />
+          </button>
         </div>
       </div>
     </div>

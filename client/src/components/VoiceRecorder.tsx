@@ -3,14 +3,22 @@ import { Mic, Square, Loader2, CheckCircle2 } from 'lucide-react';
 
 interface VoiceRecorderProps {
   onTranscriptComplete: (transcript: string) => void;
+  onRecordingStateChange?: (isRecording: boolean) => void;
+  variant?: 'light' | 'dark';
 }
 
-export const VoiceRecorder = ({ onTranscriptComplete }: VoiceRecorderProps) => {
+export const VoiceRecorder = ({ onTranscriptComplete, onRecordingStateChange, variant = 'light' }: VoiceRecorderProps) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [timer, setTimer] = useState(0);
   const timerRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (onRecordingStateChange) {
+      onRecordingStateChange(isRecording);
+    }
+  }, [isRecording, onRecordingStateChange]);
 
   useEffect(() => {
     if (isRecording) {
@@ -35,24 +43,46 @@ export const VoiceRecorder = ({ onTranscriptComplete }: VoiceRecorderProps) => {
   const startRecording = () => {
     setIsRecording(true);
     setTranscript('');
-    // Simulated speech recognition beginning
   };
 
-  const stopRecording = () => {
+  const stopRecording = async () => {
     setIsRecording(false);
     setIsProcessing(true);
-    
-    // Simulate API processing delay
-    setTimeout(() => {
+
+    try {
+      // 1. Get a "mock" raw transcript (simulating speech-to-text for now)
+      // In a real app, this would come from a browser Web Speech API or similar
       const mockTranscripts = [
-        "Today I bought 3 crates of tomatoes for 280 cedis and sold 2 for 200.",
-        "Sold all my plantains for 450 cedis. Paid 50 for transportation.",
-        "Bought 5 bags of onions. Price is higher today, 120 per bag."
+        "Today I sold 5 crates of tomatoes for 200 cedis to Auntie Ama.",
+        "Bought 3 bags of onions for 450 cedis from the driver.",
+        "Meton tomato crates 10 de gyee ₵500 wo makola nnɛ."
       ];
-      const randomTranscript = mockTranscripts[Math.floor(Math.random() * mockTranscripts.length)];
-      setTranscript(randomTranscript);
+      const rawText = mockTranscripts[Math.floor(Math.random() * mockTranscripts.length)];
+
+      // 2. Call our real backend analysis
+      const response = await fetch('http://localhost:5000/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          text: rawText,
+          context: { languages: ['Twi', 'English'] } 
+        })
+      });
+
+      if (!response.ok) throw new Error('AI Server error');
+      
+      const analysis = await response.json();
+      
+      // 3. Format a nice human-readable message from the JSON analysis
+      const formatted = `${analysis.type === 'income' ? 'Sale' : 'Purchase'}: ₵${analysis.amount} for ${analysis.item}${analysis.counterparty ? ' (via ' + analysis.counterparty + ')' : ''}`;
+      
+      setTranscript(formatted);
+    } catch (error) {
+      console.error("AI Analysis Error:", error);
+      setTranscript("Sorry, I couldn't analyze that. Please check if the AI server is running.");
+    } finally {
       setIsProcessing(false);
-    }, 1500);
+    }
   };
 
   const handleSave = () => {
@@ -60,36 +90,42 @@ export const VoiceRecorder = ({ onTranscriptComplete }: VoiceRecorderProps) => {
     setTranscript('');
   };
 
+  const isDark = variant === 'dark';
+
   return (
-    <div className="w-full max-w-md mx-auto p-6 rounded-3xl bg-white border border-slate-100 shadow-xl shadow-slate-200/50">
+    <div className={`w-full max-w-md mx-auto p-8 rounded-[32px] border ${
+      isDark 
+        ? 'bg-white/5 border-white/10 shadow-2xl' 
+        : 'bg-white border-[#EDE5DC] shadow-xl shadow-black/5'
+    }`}>
       <div className="flex flex-col items-center gap-6 text-center">
         {!transcript && !isProcessing && (
           <>
             <div className={`relative flex items-center justify-center`}>
               {isRecording && (
-                <div className="absolute inset-0 rounded-full bg-primary-500/20 animate-ping" />
+                <div className="absolute inset-0 rounded-full bg-[#FFB400]/20 animate-ping" />
               )}
               <button
                 onClick={isRecording ? stopRecording : startRecording}
                 className={`z-10 w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 ${
-                  isRecording 
-                  ? 'bg-red-500 scale-110 shadow-lg shadow-red-200' 
-                  : 'bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-200'
+                  isRecording
+                    ? 'bg-[#E63B1E] scale-110 shadow-lg shadow-red-900/20'
+                    : 'bg-[#FFB400] hover:bg-[#FFC833] shadow-lg shadow-[#FFB400]/30'
                 }`}
               >
                 {isRecording ? (
                   <Square className="w-10 h-10 text-white fill-current" />
                 ) : (
-                  <Mic className="w-10 h-10 text-white" />
+                  <Mic className="w-10 h-10 text-[#1A0A00]" />
                 )}
               </button>
             </div>
-            
+
             <div>
-              <h3 className="text-xl font-display font-bold text-slate-900">
+              <h3 className={`text-xl font-display font-bold ${isDark ? 'text-white' : 'text-[#1A0A00]'}`}>
                 {isRecording ? 'Listening...' : 'Record Transaction'}
               </h3>
-              <p className="text-slate-500 mt-1">
+              <p className={`${isDark ? 'text-white/40' : 'text-slate-500'} mt-1 font-medium`}>
                 {isRecording ? formatTime(timer) : 'Tap the mic and speak'}
               </p>
             </div>
@@ -98,28 +134,34 @@ export const VoiceRecorder = ({ onTranscriptComplete }: VoiceRecorderProps) => {
 
         {isProcessing && (
           <div className="py-8 flex flex-col items-center gap-4">
-            <Loader2 className="w-12 h-12 text-primary-500 animate-spin" />
-            <p className="text-slate-600 font-medium">Processing your voice...</p>
+            <Loader2 className={`w-12 h-12 ${isDark ? 'text-[#FFB400]' : 'text-[#FFB400]'} animate-spin`} />
+            <p className={`${isDark ? 'text-white/60' : 'text-slate-600'} font-medium`}>Processing your voice...</p>
           </div>
         )}
 
         {transcript && !isProcessing && (
           <div className="w-full animate-in fade-in zoom-in duration-300">
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-left mb-6">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Transcript</p>
-              <p className="text-slate-800 leading-relaxed italic">"{transcript}"</p>
+            <div className={`p-5 rounded-2xl border text-left mb-6 ${
+              isDark ? 'bg-white/5 border-white/10' : 'bg-[#FFFBF5] border-[#F8F0E5]'
+            }`}>
+              <p className={`text-[10px] font-bold uppercase tracking-widest mb-2 ${isDark ? 'text-white/30' : 'text-slate-400'}`}>Transcript</p>
+              <p className={`leading-relaxed italic font-medium ${isDark ? 'text-white/90' : 'text-slate-800'}`}>"{transcript}"</p>
             </div>
-            
+
             <div className="flex gap-3">
-              <button 
-                onClick={() => setTranscript('')} 
-                className="flex-1 py-3 px-4 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition-colors"
+              <button
+                onClick={() => setTranscript('')}
+                className={`flex-1 py-4 px-4 rounded-xl font-bold text-sm transition-all ${
+                  isDark 
+                    ? 'border border-white/10 text-white/60 hover:bg-white/5' 
+                    : 'border border-[#EDE5DC] text-slate-600 hover:bg-slate-50'
+                }`}
               >
                 Discard
               </button>
-              <button 
+              <button
                 onClick={handleSave}
-                className="flex-1 py-3 px-4 rounded-xl bg-primary-600 text-white font-bold text-sm hover:bg-primary-700 shadow-lg shadow-primary-200 flex items-center justify-center gap-2"
+                className="flex-1 py-4 px-4 rounded-xl bg-[#00A86B] text-white font-bold text-sm hover:brightness-110 shadow-lg shadow-green-900/20 flex items-center justify-center gap-2 transition-all"
               >
                 <CheckCircle2 className="w-4 h-4" />
                 Save Entry
